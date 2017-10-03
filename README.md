@@ -1,4 +1,4 @@
-## Welcome to GitHub Pages
+## phyloHMM (now this is underconstruction)
 
 You can use the [editor on GitHub](https://github.com/dinhe878/phyloHMM/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
 
