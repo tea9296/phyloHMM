@@ -3,16 +3,22 @@ import sys, os, operator
 import numpy as np
 from HMM import *
 from Bio import SearchIO, AlignIO 
+import argparse
 
 ###################################################################################
 #################################   PARAMETERS   ##################################
 ###################################################################################
 
 #Input arguments
-pfam_output_file = sys.argv[1]  #Pfam output file
-query_id = sys.argv[2]  #Query seed id
-alignment_file = sys.argv[3]  #Trimmed alignment file with full-length seed seq
-aa_freqs_output = sys.argv[3]+".aa_freq"  #aa_freq output file name
+parser = argparse.ArgumentParser(description='Commandline options for freq_extractor')
+parser.add_argument('--ali', help='input alignment')
+parser.add_argument('--database', help='hmm database')
+args = parser.parse_args()
+
+#pfam_output_file = sys.argv[1]  #Pfam output file
+#query_id = sys.argv[2]  #Query seed id
+#alignment_file = sys.argv[3]  #Trimmed alignment file with full-length seed seq
+#aa_freqs_output = sys.argv[3]+".aa_freq"  #aa_freq output file name
 
 #File directories
 hmm_file_dir = '/Users/ding/Desktop/for_ding/'
