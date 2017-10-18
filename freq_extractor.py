@@ -1,5 +1,5 @@
 #!/anaconda2/bin/python
-import warnings
+import warnings, sys
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
     from Bio import SearchIO
@@ -36,6 +36,8 @@ required.add_argument('--hmmer_path', help='HMMER executable directory')
 optional.add_argument('--iqtree', action='store_true', help='flag to output frequency file in IQ-TREE supported format')
 optional.add_argument('--gb_path', help='Gblocks executable directory')
 args = parser.parse_args()  # e.g. input alignment file: args.ali; output freq_file: args.out
+# Demanding required input
+if not (args.ali) or (args.database) or (args.hmmer_path): parser.error(' Please provide necessary input, "python '+sys.argv[0]+' -h" to see more info')
 
 # 3rd-party program directories
 hmmscan_exe = str(args.hmmer_path)+'hmmscan'
