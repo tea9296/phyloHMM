@@ -1,37 +1,50 @@
 #!/anaconda2/bin/python
-import operator, argparse, subprocess, re, mmap
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    from Bio import SearchIO
+import operator, argparse, subprocess, re, mmap, math
 import numpy as np
-from Bio import SearchIO, AlignIO, SeqIO
+from Bio import AlignIO, SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
+__copyright__ = """
+  ################################################################################################
+  #                                                                                              #
+  # ExCAPE: ExtraCting site-wise Amino acid frequency Profiles for a multiple sEquence alignment #
+  #                                                                                              #
+  # Ding He, Copyright 2017                                                                      #
+  # derrick.he@gmail.com                                                                         #
+  #                                                                                              #
+  ################################################################################################
+"""
+
+print __copyright__
 ###################################################################################
 #################################   PARAMETERS   ##################################
 ###################################################################################
 
-# Input arguments
-parser = argparse.ArgumentParser(description='Commandline options for freq_extractor')
-parser.add_argument('--ali', help='input alignment')
-parser.add_argument('--database', help='hmm database')
-parser.add_argument('--hmmer_path', help='HMMER executable file path')
+# Commandline arguments
+parser = argparse.ArgumentParser(description='Command-line options for freq_extractor')
+parser._action_groups.pop()
+required = parser.add_argument_group('required arguments')
+optional = parser.add_argument_group('optional arguments')
+required.add_argument('--ali', help='input alignment')
+required.add_argument('--database', help='hmm database')
+required.add_argument('--hmmer_path', help='HMMER executable directory')
+optional.add_argument('--iqtree', action='store_true', help='flag to output frequency file in IQ-TREE supported format')
+optional.add_argument('--gb_path', help='Gblocks executable directory')
 args = parser.parse_args()  # e.g. input alignment file: args.ali; output freq_file: args.out
 
-#pfam_output_file = sys.argv[1]  #Pfam output file
-#query_id = sys.argv[2]  #Query seed id
-#alignment_file = sys.argv[3]  #Trimmed alignment file with full-length seed seq
-#aa_freqs_output = sys.argv[3]+".aa_freq"  #aa_freq output file name
-
-# Directories
+# 3rd-party program directories
 hmmscan_exe = str(args.hmmer_path)+'hmmscan'
 hmmfetch_exe = str(args.hmmer_path)+'hmmfetch'
-#hmm_file_dir = '/Users/ding/Desktop/for_ding/'
-#hmm_file_dir = '/Users/dinghe/Dropbox/Projects/mito_origin/Simon/pfam/hmm/'
-#hmm_file_basenames = os.listdir(hmm_file_dir)
-#alignment_file_dir = '/Users/ding/Desktop/for_ding/'
-#alignment_file_dir = '/Users/dinghe/Dropbox/Projects/mito_origin/Data/SG_alignment/20160519/'
+gblocks_exe = str(args.gb_path)+'Gblocks'
 
 # Empirical aa_freqs from LG model ordered as ARNDCQEGHILKMFPSTWYV
-LG_aa_freqs = '2.34595 2.91338 3.49262 3.01205 4.45606 3.52632 2.83988 2.41146 3.78460 2.67538 2.34684 3.06526 3.47661 3.10027 3.17541 2.95790 2.93381 4.53976 3.46891 2.49357'
+# Probably do not need it now...
+#LG_aa_freqs = '2.34595 2.91338 3.49262 3.01205 4.45606 3.52632 2.83988 2.41146 3.78460 2.67538 2.34684 3.06526 3.47661 3.10027 3.17541 2.95790 2.93381 4.53976 3.46891 2.49357'
 
 # Global variables
 global seed_seq_m_start
@@ -135,11 +148,11 @@ class HMM:
 
 #Parse the hmmscan output file(s) and return the information needed for alignment-hmm sites mapping
 def ali_parser(alignment_file):
-    ali_obj = AlignIO.read(alignment_file, "fasta")
-    for record in ali_obj:
+    full_ali_obj = AlignIO.read(alignment_file, "fasta")
+    for record in full_ali_obj:
         record.seq = str(record.seq).replace('X','-')  # in case of 'X', replacing it with '-'
     
-    raw_array = np.array([list(rec) for rec in ali_obj], np.character, order="F")  # Convert alignment object to np_array object
+    raw_array = np.array([list(rec) for rec in full_ali_obj], np.character, order="F")  # Convert alignment object to np_array object
     col_array = np.transpose(raw_array)  # align_columns.shape == (#col, #raw), i.e. (#site, #seq)
 
     # compute the columne scores (as the proxy for seq coverage percentage)
@@ -165,11 +178,11 @@ def ali_parser(alignment_file):
     #obtaining seed_seq related info
     seed_seq_array = raw_array[np.argmax(seq_score)]
     seed_seq = "".join(seed_seq_array)
-    for record in ali_obj:
+    for record in full_ali_obj:
         if str(record.seq) == seed_seq:
             seed_id = str(record.id)
 
-    seed_to_ali_mapping = [0 if x == '-' else 1 for x in seed_seq_array]  # constructing a mapping list of '-'== 0 & amino acids == 1,2,3,... seed_seq indicating position)
+    seed_to_ali_mapping = [0 if x == '-' else 1 for x in seed_seq_array]  # constructing a mapping list of '-'== 0 & amino acids == 1,2,3,... seed_seq indicating position in the original alignment)
     i = 0  # track the alignment position
     j = 1  # track the seed_seq position
     #print len(seed_seq)
@@ -210,43 +223,6 @@ def hmmscan_parser(out_file, qurey_id):
 	
 	return domain_info
 
-#def pfam_parser(out_file, qurey_id):
-#	
-#	domain_info = {}  # store domain(s) info
-#	
-#	for QueryResult in SearchIO.parse(out_file,'hmmer3-text'):
-#		if qurey_id in str(QueryResult.id):
-#			#print QueryResult.description
-#			for hit in QueryResult.hits:
-#				for HSPFragments in hit.hsps:
-#					query_hit_start = HSPFragments.query_start+1 # parsed start position appears to be 1 site short
-#					query_hit_seq = HSPFragments.query.seq
-#					query_hit_end = HSPFragments.query_end
-#					domain_hit_start = HSPFragments.hit_start+1
-#					domain_hit_end = HSPFragments.hit_end
-#					
-#				domain_info[hit.id] = [query_hit_start, query_hit_end, query_hit_seq, domain_hit_start, domain_hit_end]
-#	
-#	return domain_info
-
-#Parse the the original alignments (with seed seq)
-#def alignment_parser(alignment_file):
-#	alignment = AlignIO.read(alignment_file, "fasta")
-#	align_array = np.array([list(rec) for rec in alignment], np.character, order="F")  #Convert alignment object to np_array object
-#	align_columns = np.transpose(align_array)  #align_columns.shape == (#col, #raw), i.e. (#site, #seq)
-#	#Loop the columns to define the site mapping boundaries (using the full seed seq to map onto the trimmed alignment)
-#	align_mapping = []
-#	for col in align_columns:
-#		#Check if only the seed seq in the column
-#		col_check = col.tolist()
-#		col_check = filter(lambda a: a != '-', col_check)
-#		if len(col_check) == 1:  #Only seed seq present
-#			align_mapping.append(0)
-#		elif len(col_check) > 1:
-#			align_mapping.append(1)
-#
-#	return align_mapping  #The structure looks like [0,0,0,1,1,1,0,0,1,...0] where 1 indicates mapped onto trimmed alignment
-
 ###################################################################################
 ###############################   MAIN PROCESSES   ################################
 ###################################################################################
@@ -266,9 +242,6 @@ for hmm_name, hits in sorted(domains.items(), key=operator.itemgetter([1][0])): 
             dm_start = int(hit_info[3])  #Doamin match start
             dm_end = int(hit_info[4])  #Doamin match end
         
-#           print hmm_name  #Check
-#           print '%d %d' % (len(hmm_database[hmm_name][0]['A'][0]), len(hmm_database[hmm_name][0]['A'][1]))   #Check
-	
             # Mapping the aa_freqs to seed_seq sites according to the hmmscan output
             hmmscan_seed_seq = list(dm_seed_seq)  #A list storing dm_seed_seq site-by-site
 
@@ -334,6 +307,9 @@ for hmm_name, hits in sorted(domains.items(), key=operator.itemgetter([1][0])): 
 
 for i, aa_freqs in enumerate(seed_seq_master):
     if isinstance(aa_freqs, list):
+        aa_freqs = map(lambda x: float(x), aa_freqs)
+        aa_freqs = map(lambda x: math.exp(-x), aa_freqs)  # aa_freq unit concersion (need to check possible numerical problem: sum(aa_freq) == 1 for each site)
+        aa_freqs = map(lambda x: str(x), aa_freqs)
         seed_seq_master[i] = " ".join(aa_freqs)  #Construct the aa_freq string
 
 seed_seq_master = filter(lambda x: x != "-", seed_seq_master)  #Discard deletion states "-"
@@ -344,37 +320,96 @@ while seed_seq_m_start <= seed_seq_m_end:
         seed_to_ali_mapping = [site_aa_freq if x == seed_seq_m_start else x for x in seed_to_ali_mapping]
         seed_seq_m_start += 1
 
-##################################################################################################
-#########   IMPORTANT PROCESSES TO CORRECTLY MAP THE DOMAIN ONTO THE ORIGINAL ALIGNMENT  #########
-##################################################################################################
-#seed_to_alignment_mapping_check = seed_to_alignment_mapping[:]  #Duplicate the seed_to_alignment_mapping for checking the sites within the found domains but not in the trimmed alignment
-##Loop the domain hits in the order of from the N-terminal to C-terminal of the seed seq
-#for id, info in sorted(domains.items(), key=operator.itemgetter([1][0])):
-#	seq_start = int(info[0])  #Seed seq match start
-#	seq_end = int(info[1])  #Seed seq match end
-#	#This loop maps aa_freqs onto the positions where the domains were found based on the seed seq
-#	#So the seed_to_alignment_mapping should have aa_freqs regardless of if sites present in the trimmed alignment
-#	for i in range(seq_start, seq_end+1):
-#		seed_to_alignment_mapping[i-1] = seed_seq_master.pop(0)  #First position is 0
-#
-##This loop dicards the domain aa_freqs where not present in the trimmed alignment
-#for i, aa_freq in enumerate(seed_to_alignment_mapping):
-#	if seed_to_alignment_mapping_check[i] == 0:
-#		seed_to_alignment_mapping[i] = 0
+#Output the aa_freq for full & hmm_trimmed alignments
+full_ali_obj = AlignIO.read(args.ali, "fasta")  # have to read the original alignment again!
 
-##################################################################################################
-##################################################################################################
+# Executing Gblocks processes
+# Make seq names shorter so Gblocks is happy (<= 15 characters, I think...)
+i = 0
+full_ali_seq_des = []  # getting sequence descriptions for restoring to the original descriptions after Gblocks trimming
+for record in full_ali_obj:
+    record.id = str(i)
+    full_ali_seq_des.append(record.description)
+    record.description = ""
+    i += 1
 
-#Output the aa_freq
-aa_freqs_output_file = open(args.ali+".freq", 'w')
+AlignIO.write(full_ali_obj, args.ali+".temp_gb", "fasta")
 
-#seed_to_alignment_mapping = filter(lambda a: a != 0, seed_to_alignment_mapping)  #Discard sites not in trimmed alignment: 0 
+print "\n---------------------------- Gblocks output ----------------------------"
+try:
+    subprocess.check_output([gblocks_exe, args.ali+".temp_gb", "-b4=5", "-b5=h"])
+except subprocess.CalledProcessError as e:
+    print e.output
+print "-------------------------------------------------------------------------\n\n"
 
-for aa_freq in seed_to_ali_mapping:
-	if type(aa_freq) is str:
-		aa_freqs_output_file.write(aa_freq+"\n")
-	else:
-		aa_freqs_output_file.write("NA\n")
+gbtrim_ali_obj = AlignIO.read(args.ali+".temp_gb-gb", "fasta")
+i = 0
+for record in gbtrim_ali_obj:
+    record.description = full_ali_seq_des[0]
+    i += 1
+
+full_ali_raw_array = np.array([list(rec) for rec in full_ali_obj], np.character, order="F")  # Convert alignment object to np_array object
+full_ali_col_array = np.transpose(full_ali_raw_array)  # align_columns.shape == (#col, #raw), i.e. (#site, #seq)
+gbtrim_ali_raw_array = np.array([list(rec) for rec in gbtrim_ali_obj], np.character, order="F")  # Convert alignment object to np_array object
+gbtrim_ali_col_array = np.transpose(gbtrim_ali_raw_array)  # align_columns.shape == (#col, #raw), i.e. (#site, #seq)
+#print gbtrim_ali_col_array[0]
+
+print "Generating aa_freq files..."  # some checking status...
+
+aa_freqs_output_file = open(args.ali+".freq", 'w')  # for full original alignment
+aa_freqs_output_file_hmmtrim = open(args.ali+".hmmtrim.freq", 'w')  # for trimmed alignment where hmm profile was mapped
+aa_freqs_output_file_gbtrim = open(args.ali+".gbtrim.freq", 'w')  # for Gblocks trimmed alignment
+
+hmmtrim_ali_obj = full_ali_obj[:,0:0]  # initiating an empty alignment for hmmtrim
+hmmtrim_iqtree_site_pos = 1  # first element of the freq_file for hmmtrim in iqtree format
+gbtrim_iqtree_site_pos = 1  # first element of the freq_file for gbtrim in iqtree format
+for pos, aa_freq in enumerate(seed_to_ali_mapping):
+    if type(aa_freq) is str:  # hmm_profile mapped
+        if args.iqtree:  # freq_file in iqtree format
+            aa_freqs_output_file.write(str(pos+1)+" "+aa_freq+"\n")
+            aa_freqs_output_file_hmmtrim.write(str(hmmtrim_iqtree_site_pos)+" "+aa_freq+"\n")
+            hmmtrim_iqtree_site_pos += 1
+            try:
+                if full_ali_col_array[pos].tolist() == gbtrim_ali_col_array[gbtrim_iqtree_site_pos-1].tolist():                    
+                    aa_freqs_output_file_gbtrim.write(str(gbtrim_iqtree_site_pos)+" "+aa_freq+"\n")
+                    gbtrim_iqtree_site_pos += 1
+
+            except IndexError:  # capture the IndexError when gbtrim positions are running out, so the rest of processes can continue
+                continue
+
+        else:
+            aa_freqs_output_file.write(aa_freq+"\n")
+            aa_freqs_output_file_hmmtrim.write(aa_freq+"\n")
+            try:
+                if full_ali_col_array[pos].tolist() == gbtrim_ali_col_array[gbtrim_iqtree_site_pos-1].tolist():
+                    while (gbtrim_iqtree_site_pos <= len(gbtrim_ali_col_array)):
+                        aa_freqs_output_file_gbtrim.write(aa_freq+"\n")
+                        gbtrim_iqtree_site_pos += 1
+            
+            except IndexError:  # capture the IndexError when gbtrim positions are running out, so the rest of processes can continue
+                continue
+
+        hmmtrim_ali_obj = hmmtrim_ali_obj[:,:] + full_ali_obj[:,pos-1:pos]
+        
+    else:
+        if args.iqtree:  # freq_file in iqtree format
+            aa_freqs_output_file.write(str(pos+1)+" "+"NA\n")
+        else:
+            aa_freqs_output_file.write("NA\n")
+
+for record in hmmtrim_ali_obj:
+    record.description = full_ali_seq_des[0]
+    i += 1
+
+AlignIO.write(hmmtrim_ali_obj, args.ali+".hmmtrim", "fasta")
+AlignIO.write(gbtrim_ali_obj, args.ali+".gbtrim", "fasta")
 
 aa_freqs_output_file.close()
-
+aa_freqs_output_file_hmmtrim.close()
+aa_freqs_output_file_gbtrim.close()
+if args.iqtree:
+    print '\nFull alignment:\t\t%s\nHMM_profile mapped alignment:\t%s\nGblock trimmed alignment:\t%s' % (args.ali+".freq", args.ali+".hmmtrim.freq", args.ali+".gbtrim.freq")
+else:
+    print '\nFull alignment:\t%s\nHMM_profile mapped alignment:\t%s' % (args.ali+".freq", args.ali+".hmmtrim.freq")
+    
+print "\nAll processes are completed."
