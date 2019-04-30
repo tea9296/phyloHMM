@@ -1,0 +1,78 @@
+# hmmscan :: search sequence(s) against a profile database
+# HMMER 3.1b2 (February 2015); http://hmmer.org/
+# Copyright (C) 2015 Howard Hughes Medical Institute.
+# Freely distributed under the GNU General Public License (GPLv3).
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# query sequence file:             temp_seed_seq.fasta
+# target HMM database:             database.hmm
+# output directed to file:         temp_hmmscan.out
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Query:       Emiliania_huxleyi379@20130905_10578_1  [L=557]
+Description: <unknown description>
+Scores for complete sequence (score includes all domains):
+   --- full sequence ---   --- best 1 domain ---    -#dom-
+    E-value  score  bias    E-value  score  bias    exp  N  Model           Description
+    ------- ------ -----    ------- ------ -----   ---- --  --------        -----------
+   5.9e-284  930.8   0.0   7.5e-284  930.5   0.0    1.0  1  OG5_126611_tubb  
+
+
+Domain annotation for each model (and alignments):
+>> OG5_126611_tubb  
+   #    score  bias  c-Evalue  i-Evalue hmmfrom  hmm to    alifrom  ali to    envfrom  env to     acc
+ ---   ------ ----- --------- --------- ------- -------    ------- -------    ------- -------    ----
+   1 !  930.5   0.0  8.3e-285  7.5e-284       2     443 ..      13     454 ..      12     460 .. 0.99
+
+  Alignments for each domain:
+  == domain 1  score: 930.5 bits;  conditional E-value: 8.3e-285
+                        OG5_126611_tubb   2 mreivhlqagqcgnqigakfwevisdehgidptgayvgdsdlqlerinvyyneasggkyvpravlvdlepgt 73 
+                                            mreiv++q gqcgnqigakfwev+sdehgidptg+y+gdsdlqlerinvyynea+gg+yvpravl+dlepgt
+  Emiliania_huxleyi379@20130905_10578_1  13 MREIVSIQGGQCGNQIGAKFWEVVSDEHGIDPTGTYHGDSDLQLERINVYYNEATGGRYVPRAVLMDLEPGT 84 
+                                            9*********************************************************************** PP
+
+                        OG5_126611_tubb  74 mdsvrsgpfgqlfrpdnfvfgqsgagnnwakGhytegaelvdsvldvvrkeaescdclqGfqlthslggGtG 145
+                                            mdsvrsgpfgq+frpdnfvfgqsgagnnwakGhytegael+d+vldvvrkeae cdclqGf l+hslggGtG
+  Emiliania_huxleyi379@20130905_10578_1  85 MDSVRSGPFGQIFRPDNFVFGQSGAGNNWAKGHYTEGAELIDAVLDVVRKEAEGCDCLQGFTLSHSLGGGTG 156
+                                            ************************************************************************ PP
+
+                        OG5_126611_tubb 146 sGlgtlliskireeypdrilntfsvvpspkvsdtvvePynatlsvhqlventdetycidnealydicfrtlk 217
+                                            sG+gtlliskireeypdr++ ++sv+pspkvsdtvvePyn++ls+hqlven+de+  idnealydicfrtlk
+  Emiliania_huxleyi379@20130905_10578_1 157 SGMGTLLISKIREEYPDRVMCSYSVFPSPKVSDTVVEPYNCVLSIHQLVENSDESLLIDNEALYDICFRTLK 228
+                                            ************************************************************************ PP
+
+                        OG5_126611_tubb 218 lttPtygdlnhlvsatmsGvttslrfpgqlnadlrklavnlvpfprlhffmpgfapltsrgsqqyraltvpe 289
+                                            lttPt+gdlnhlv+a+ms  t++lrfpgqln+dlrklavn++pfprlhffm+gfapltsrgsqqyr+ltvpe
+  Emiliania_huxleyi379@20130905_10578_1 229 LTTPTFGDLNHLVAAVMSASTCCLRFPGQLNCDLRKLAVNMIPFPRLHFFMVGFAPLTSRGSQQYRSLTVPE 300
+                                            ************************************************************************ PP
+
+                        OG5_126611_tubb 290 ltqqmfdaknmmaacdprhGryltvaavfrGrmsmkevdeqmlnvqsknssyfvewiPnnvkvavcdipprg 361
+                                            ltqqmfdaknmmaa+dprhGrylt++a+frGrms+kevdeqmlnvq+knssyfvewiPnn+k a+cdipp+g
+  Emiliania_huxleyi379@20130905_10578_1 301 LTQQMFDAKNMMAAADPRHGRYLTCTALFRGRMSTKEVDEQMLNVQNKNSSYFVEWIPNNMKCAICDIPPKG 372
+                                            ************************************************************************ PP
+
+                        OG5_126611_tubb 362 lkmsatfignstaiqelfkriseqftamfrrkaflhwytgeGmdemefteaesnmndlvseyqqyqdataee 433
+                                            lkms+ f+gnst++qe++kr++eqftamfrrkaflhwytgeGmdemefteaesnmndlvseyqqyqda+aee
+  Emiliania_huxleyi379@20130905_10578_1 373 LKMSVGFMGNSTCMQEVMKRVAEQFTAMFRRKAFLHWYTGEGMDEMEFTEAESNMNDLVSEYQQYQDASAEE 444
+                                            ************************************************************************ PP
+
+                        OG5_126611_tubb 434 eeeleeeeee 443
+                                            e+e++ee  e
+  Emiliania_huxleyi379@20130905_10578_1 445 EGEYDEEGGE 454
+                                            ***9998655 PP
+
+
+
+Internal pipeline statistics summary:
+-------------------------------------
+Query sequence(s):                         1  (557 residues searched)
+Target model(s):                           9  (4653 nodes)
+Passed MSV filter:                         2  (0.222222); expected 0.2 (0.02)
+Passed bias filter:                        2  (0.222222); expected 0.2 (0.02)
+Passed Vit filter:                         1  (0.111111); expected 0.0 (0.001)
+Passed Fwd filter:                         1  (0.111111); expected 0.0 (1e-05)
+Initial search space (Z):                  9  [actual number of targets]
+Domain search space  (domZ):               1  [number of targets reported over threshold]
+# CPU time: 0.00u 0.00s 00:00:00.00 Elapsed: 00:00:00.01
+# Mc/sec: 259.17
+//
+[ok]
